@@ -1,0 +1,17 @@
+{
+  "name": "Wannarat Hash Tools",
+  "short_name": "Hash Tools",
+  "description": "Client-side hash, checksum, HMAC, password hash, encode/decode, and hash identifier tools.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#030711",
+  "theme_color": "#030711",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
