@@ -23,7 +23,10 @@ export function CommonHashTool() {
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [query, setQuery] = useState("");
-  const [selectedAlgorithm, setSelectedAlgorithm] = useState("sha512");
+  const [selectedAlgorithm, setSelectedAlgorithm] = useState(() => {
+    const algo = params.get("algo");
+    return algo && hashAlgorithms.some((item) => item.id === algo) ? algo : "sha512";
+  });
   const [result, setResult] = useState<HashResult | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
