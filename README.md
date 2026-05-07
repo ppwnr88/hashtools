@@ -12,7 +12,7 @@ Premium terminal-style developer utilities for hash, checksum, HMAC, password ha
 - Pattern-based hash identifier
 - LocalStorage history and auto-copy toggle
 - Responsive sidebar and mobile bottom navigation
-- SEO pages, blog content, sitemap, robots, and AdSense-ready slots
+- SEO pages, blog content, sitemap, and robots
 
 ## Install
 
@@ -50,7 +50,6 @@ Import `https://github.com/ppwnr88/hashtools.git` in Vercel.
 ## Environment Variables
 
 - `VITE_SITE_URL`: canonical production URL, for example `https://your-domain.com`
-- `VITE_ENABLE_ADS`: set to `true` to render AdSense slots, `false` to disable
 
 ## Privacy Note
 

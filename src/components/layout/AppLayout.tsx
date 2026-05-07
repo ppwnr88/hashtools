@@ -1,9 +1,15 @@
-import { NavLink, Outlet } from "react-router-dom";
-import { GitBranch, Terminal } from "lucide-react";
-import { AdSlot } from "../ads/AdSlot";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
+import { Terminal } from "lucide-react";
 import { navItems } from "./navigation";
 
 export function AppLayout() {
+  const location = useLocation();
+
+  function isToolActive(to: string) {
+    const target = new URL(to, window.location.origin);
+    return target.pathname === location.pathname;
+  }
+
   return (
     <div className="shell">
       <aside className="sidebar">
@@ -16,10 +22,10 @@ export function AppLayout() {
         </NavLink>
         <nav className="side-nav" aria-label="Tool navigation">
           {navItems.map((item) => (
-            <NavLink key={item.label} to={item.to} className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+            <Link key={item.label} to={item.to} className={isToolActive(item.to) ? "nav-link active" : "nav-link"}>
               <item.icon size={17} />
               {item.label}
-            </NavLink>
+            </Link>
           ))}
         </nav>
       </aside>
@@ -30,32 +36,26 @@ export function AppLayout() {
             <p className="eyebrow"><Terminal size={14} /> client-side developer utility</p>
             <p className="privacy-line">All calculations run locally in your browser. Your input is never uploaded.</p>
           </div>
-          <a href="https://vercel.com" className="ghost-link" target="_blank" rel="noreferrer">
-            <GitBranch size={16} /> Static-ready
-          </a>
         </header>
-        <AdSlot placement="top" />
         <main className="content-grid">
           <section className="content">
             <Outlet />
           </section>
           <aside className="right-rail">
-            <AdSlot placement="rail" />
             <div className="notice-card">
               <strong>Privacy notice</strong>
               <p>Your text, files, passwords, and keys stay in your browser. This website does not upload or store them.</p>
             </div>
           </aside>
         </main>
-        <AdSlot placement="bottom" />
       </div>
 
       <nav className="mobile-tabs" aria-label="Mobile navigation">
-        {navItems.slice(0, 5).map((item) => (
-          <NavLink key={item.label} to={item.to} className={({ isActive }) => (isActive ? "mobile-tab active" : "mobile-tab")}>
+        {navItems.map((item) => (
+          <Link key={item.label} to={item.to} className={isToolActive(item.to) ? "mobile-tab active" : "mobile-tab"}>
             <item.icon size={18} />
-            <span>{item.label.replace("Common ", "")}</span>
-          </NavLink>
+            <span>{item.label}</span>
+          </Link>
         ))}
       </nav>
     </div>

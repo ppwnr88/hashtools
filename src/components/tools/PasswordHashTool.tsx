@@ -5,12 +5,13 @@ import { ResultBox } from "./ResultBox";
 
 export function PasswordHashTool() {
   const [password, setPassword] = useState("");
-  const [salt, setSalt] = useState(generateSaltHex(16));
+  const [salt, setSalt] = useState(() => generateSaltHex(16));
   const [cost, setCost] = useState(10);
   const [hash, setHash] = useState("");
   const [verifyHash, setVerifyHash] = useState("");
   const [verifyResult, setVerifyResult] = useState("");
   const [pbkdf2, setPbkdf2] = useState({ iterations: 100000, keyLength: 32, digest: "SHA-256" as "SHA-1" | "SHA-256" | "SHA-512" });
+  const [pbkdf2Output, setPbkdf2Output] = useState("");
   const [loading, setLoading] = useState("");
   const [error, setError] = useState("");
 
@@ -29,7 +30,19 @@ export function PasswordHashTool() {
     }
   }
 
-  const pbkdf2Output = password ? derivePbkdf2(password, salt, pbkdf2.iterations, pbkdf2.keyLength, pbkdf2.digest) : "";
+  function runPbkdf2() {
+    setError("");
+    setLoading("pbkdf2");
+    window.setTimeout(() => {
+      try {
+        setPbkdf2Output(password ? derivePbkdf2(password, salt, pbkdf2.iterations, pbkdf2.keyLength, pbkdf2.digest) : "");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "PBKDF2 derive failed.");
+      } finally {
+        setLoading("");
+      }
+    }, 0);
+  }
 
   return (
     <div className="tool-stack">
@@ -62,10 +75,14 @@ export function PasswordHashTool() {
       </section>
       <section className="panel">
         <h2>PBKDF2 derive key</h2>
+        <p className="muted">PBKDF2 can be intentionally expensive, so it runs only when you click derive instead of on every keystroke.</p>
         <div className="field-grid three">
           <label>Iterations<input type="number" value={pbkdf2.iterations} onChange={(event) => setPbkdf2({ ...pbkdf2, iterations: Number(event.target.value) })} /></label>
           <label>Key length bytes<input type="number" value={pbkdf2.keyLength} onChange={(event) => setPbkdf2({ ...pbkdf2, keyLength: Number(event.target.value) })} /></label>
           <label>Digest<select value={pbkdf2.digest} onChange={(event) => setPbkdf2({ ...pbkdf2, digest: event.target.value as typeof pbkdf2.digest })}><option>SHA-1</option><option>SHA-256</option><option>SHA-512</option></select></label>
+        </div>
+        <div className="tool-actions">
+          <button type="button" className="primary-btn" onClick={runPbkdf2} disabled={loading === "pbkdf2"}>Derive PBKDF2</button>
         </div>
         <ResultBox label="PBKDF2 hex" value={pbkdf2Output} />
       </section>

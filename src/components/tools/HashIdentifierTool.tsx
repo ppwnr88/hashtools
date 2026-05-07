@@ -8,6 +8,10 @@ export function HashIdentifierTool() {
   return (
     <div className="tool-stack">
       <section className="panel">
+        <div className="panel-head">
+          <h2>Hash input</h2>
+          <span className="muted">Paste once; guesses update immediately below.</span>
+        </div>
         <textarea rows={7} value={input} onChange={(event) => setInput(event.target.value)} placeholder="Paste a hash or encoded digest..." />
         <p className="muted">This is a pattern-based guess, not 100% confirmation. Different algorithms can produce the same length and character set.</p>
       </section>

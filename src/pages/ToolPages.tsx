@@ -111,7 +111,7 @@ export function HomePage() {
 
 export function HashPage() {
   useToolMeta("Hash Generator");
-  return <ToolChrome title="Common Hash Tool" kicker="hash / checksum"><CommonHashTool /></ToolChrome>;
+  return <ToolChrome title="Hash / Checksum Tool" kicker="popular hash algorithms"><CommonHashTool /></ToolChrome>;
 }
 
 export function HmacPage() {

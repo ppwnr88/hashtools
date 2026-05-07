@@ -13,12 +13,16 @@ export function HmacTool() {
   return (
     <div className="tool-stack">
       <section className="panel">
-        <div className="field-grid">
-          <label>Message<textarea value={message} onChange={(event) => setMessage(event.target.value)} rows={7} placeholder="Message to sign..." /></label>
-          <label>Secret key<textarea value={key} onChange={(event) => setKey(event.target.value)} rows={7} placeholder="Secret key..." /></label>
+        <div className="panel-head">
+          <h2>Algorithm</h2>
+          <span className="muted">Choose first, then type your message and key.</span>
         </div>
         <div className="segmented">
           {algorithms.map((item) => <button key={item} className={item === algorithm ? "active" : ""} onClick={() => setAlgorithm(item)} type="button">{item}</button>)}
+        </div>
+        <div className="field-grid">
+          <label>Message<textarea value={message} onChange={(event) => setMessage(event.target.value)} rows={7} placeholder="Message to sign..." /></label>
+          <label>Secret key<textarea value={key} onChange={(event) => setKey(event.target.value)} rows={7} placeholder="Secret key..." /></label>
         </div>
       </section>
       <section className="panel">

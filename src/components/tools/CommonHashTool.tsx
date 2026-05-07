@@ -1,5 +1,5 @@
 import { Clipboard, Download, Eraser, FileUp, Search } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import type { HashResult, HistoryItem } from "../../types";
 import { formatBytes } from "../../utils/bytes";
@@ -9,23 +9,26 @@ import { calculateHash } from "../../services/hash/hashService";
 import { HistoryPanel } from "./HistoryPanel";
 import { ResultBox } from "./ResultBox";
 
-const groupMap: Record<string, string> = {
-  sha: "SHA Family",
-  sha3: "SHA3 / Keccak",
-  checksum: "Checksum",
+const defaultAlgorithmByGroup: Record<string, string> = {
+  sha: "sha256",
+  sha3: "sha3-256",
+  checksum: "crc32",
 };
 
-const quickAlgorithmIds = ["md5", "sha1", "sha256", "sha512", "crc32"];
+const quickAlgorithmIds = ["md5", "sha1", "sha256", "sha512", "sha3-256", "blake3", "crc32"];
 const encoder = new TextEncoder();
 
 export function CommonHashTool() {
   const [params] = useSearchParams();
+  const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [query, setQuery] = useState("");
   const [selectedAlgorithm, setSelectedAlgorithm] = useState(() => {
     const algo = params.get("algo");
-    return algo && hashAlgorithms.some((item) => item.id === algo) ? algo : "sha512";
+    const group = params.get("group") || "";
+    if (algo && hashAlgorithms.some((item) => item.id === algo)) return algo;
+    return defaultAlgorithmByGroup[group] || "sha512";
   });
   const [result, setResult] = useState<HashResult | null>(null);
   const [error, setError] = useState("");
@@ -38,14 +41,15 @@ export function CommonHashTool() {
   const canGenerate = Boolean(text || file) && selectedMeta.available;
   const quickAlgorithms = quickAlgorithmIds.map((id) => hashAlgorithms.find((algo) => algo.id === id)).filter((algo): algo is NonNullable<typeof algo> => Boolean(algo));
 
-  const visibleAlgorithms = useMemo(() => {
-    const group = groupMap[params.get("group") || ""] || "";
-    return hashAlgorithms.filter((algo) => {
-      const matchesGroup = group ? algo.category === group : true;
-      const matchesQuery = `${algo.label} ${algo.description}`.toLowerCase().includes(query.toLowerCase());
-      return matchesGroup && matchesQuery;
-    });
-  }, [params, query]);
+  const algorithmOptions = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    const selected = hashAlgorithms.find((algo) => algo.id === selectedAlgorithm);
+    const filtered = normalized
+      ? hashAlgorithms.filter((algo) => `${algo.label} ${algo.category} ${algo.description}`.toLowerCase().includes(normalized))
+      : hashAlgorithms;
+    if (selected && !filtered.some((algo) => algo.id === selected.id)) return [selected, ...filtered];
+    return filtered;
+  }, [query, selectedAlgorithm]);
 
   const generate = useCallback(async () => {
     setError("");
@@ -70,7 +74,7 @@ export function CommonHashTool() {
     } finally {
       setLoading(false);
     }
-  }, [file, selectedAlgorithm, text]);
+  }, [file, selectedAlgorithm, setHistory, text]);
 
   useEffect(() => {
     const handle = window.setTimeout(() => void generate(), 160);
@@ -102,6 +106,11 @@ export function CommonHashTool() {
     setError("");
   }
 
+  function selectAlgorithm(id: string) {
+    setSelectedAlgorithm(id);
+    window.setTimeout(() => textAreaRef.current?.focus(), 0);
+  }
+
   async function copyPrimary() {
     if (result?.hexLower) await navigator.clipboard.writeText(result.hexLower);
   }
@@ -120,15 +129,40 @@ export function CommonHashTool() {
   return (
     <div className="tool-stack">
       <section className="panel quick-hash-panel">
-        <div className="quick-tabs" aria-label="Quick hash algorithms">
+        <div className="quick-tabs" aria-label="Popular hash algorithms">
+          <span className="quick-tabs-label">Popular</span>
           {quickAlgorithms.map((algo) => (
-            <button key={algo.id} type="button" className={selectedAlgorithm === algo.id ? "active" : ""} onClick={() => setSelectedAlgorithm(algo.id)}>
+            <button key={algo.id} type="button" className={selectedAlgorithm === algo.id ? "active" : ""} onClick={() => selectAlgorithm(algo.id)}>
               {algo.label}
             </button>
           ))}
         </div>
 
-        <textarea className="quick-input" value={text} onChange={(event) => { setText(event.target.value); setFile(null); }} placeholder={`Enter text to generate ${selectedMeta.label} hash...`} rows={9} />
+        <div className="quick-picker">
+          <label>
+            Search
+            <span className="search-box compact"><Search size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search algorithm..." /></span>
+          </label>
+          <label>
+            Algorithm
+            <select value={selectedAlgorithm} onChange={(event) => selectAlgorithm(event.target.value)}>
+              {algorithmOptions.map((algo) => (
+                <option key={algo.id} value={algo.id} disabled={!algo.available}>
+                  {algo.label}{algo.available ? "" : " - Coming soon"}
+                </option>
+              ))}
+            </select>
+          </label>
+          <span>{selectedMeta.category}</span>
+        </div>
+        <div className="algorithm-summary">
+          <p>{selectedMeta.description}</p>
+          {selectedMeta.warning && <strong>{selectedMeta.warning}</strong>}
+          <small>Best for: {selectedMeta.bestFor}</small>
+          <small>Avoid for: {selectedMeta.avoidFor}</small>
+        </div>
+
+        <textarea ref={textAreaRef} className="quick-input" value={text} onChange={(event) => { setText(event.target.value); setFile(null); }} placeholder={`Enter text to generate ${selectedMeta.label} hash...`} rows={9} />
 
         <div className="quick-status">
           <span>{byteLength} bytes</span>
@@ -153,26 +187,6 @@ export function CommonHashTool() {
           {file && <span className="file-meta">{file.name} · {formatBytes(file.size)}</span>}
         </div>
         {error && <div className="status error">{error}</div>}
-      </section>
-
-      <section className="panel">
-        <div className="panel-head">
-          <h2>More algorithms</h2>
-          <span className="muted">Choose one algorithm at a time for a cleaner result.</span>
-        </div>
-        <div className="search-box"><Search size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search algorithm..." /></div>
-        <div className="algorithm-grid">
-          {visibleAlgorithms.map((algo) => (
-            <button key={algo.id} type="button" className={`algorithm-card ${selectedAlgorithm === algo.id ? "selected" : ""}`} disabled={!algo.available} onClick={() => setSelectedAlgorithm(algo.id)}>
-              <span>{algo.label}</span>
-              <small>{algo.description}</small>
-              <em>{algo.available ? algo.category : "Coming soon"}</em>
-              {algo.warning && <strong>{algo.warning}</strong>}
-              <small>Best: {algo.bestFor}</small>
-              <small>Avoid: {algo.avoidFor}</small>
-            </button>
-          ))}
-        </div>
       </section>
 
       <section className="panel">
